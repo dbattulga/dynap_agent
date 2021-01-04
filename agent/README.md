@@ -71,8 +71,8 @@ Other APIs:
 ### List all Jobs
 `GET /jobs`
 
-## Lookup jobs details
+### Lookup jobs details
 `GET /jobs/<name>`
 
-## Delete a job
+### Delete a job
 `DELETE /jobs/<name>`
