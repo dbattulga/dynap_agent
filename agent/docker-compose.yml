@@ -6,5 +6,6 @@ services:
     volumes:
       - .:/usr/src/app
       - ./jars:/jars
+      - ./conf:/conf
     ports:
       - 5000:80
