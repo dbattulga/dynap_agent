@@ -49,6 +49,32 @@ def receive_file():
         return '404'
 
 
+@app.route('/test', methods=['GET'])
+def send_file():
+    shelf = db_handler.get_db('jobs.db')
+    key = 'A_job'
+    #url = shelf[key]['agent_address']
+    url = 'http://10.188.166.99'
+
+    body = {'pipeline_name': shelf[key]['pipeline_name'],
+            'job_name': shelf[key]['job_name'],
+            'agent_address': shelf[key]['agent_address'],
+            'source_broker': shelf[key]['source_broker'],
+            'sink_broker': shelf[key]['sink_broker'],
+            'source_topic': shelf[key]['source_topic'],
+            'sink_topic': shelf[key]['sink_topic'],
+            'entry_class': shelf[key]['entry_class']
+        }
+        
+    files = [
+            ('jar', ('test.jar', open(shelf[key]['job_path'], 'rb'), 'application/octet')),
+            ('data', ('data', json.dumps(body), 'application/json')),
+        ]
+    req = requests.post(url + ":5001/upload", files=files)
+    delete_job(key)
+    return req
+
+
 daats = {'pipeline_name': 'first_pipe', 
         'job_name': 'A_job', 
         'agent_address': 'http://10.188.166.99', 
@@ -69,14 +95,14 @@ def list_job():
 @app.route('/delete', methods=['GET'])
 def delete_job():
     shelf = db_handler.get_db('jobs.db')
-    key = 'B_job'
+    key = 'A_job'
     if not (key in shelf):
         return {'message': 'Job not found', 'data': {}}, 404
     host = shelf[key]['agent_address'] + ':' + spe_port
     spe_handler.delete_jar(host, shelf[key]['jarid'])
     spe_handler.stop_job(host, shelf[key]['jobid'])
-    if os.path.exists(job_path+'/'+shelf[key]['filename']):
-        os.remove(job_path+'/'+shelf[key]['filename'])
+    if os.path.exists(shelf[key]['job_path']):
+        os.remove(shelf[key]['job_path'])
     del shelf[key]
     shelf.close()
     return '200'
@@ -100,6 +126,7 @@ def start_job(args, filename):
     args['filename'] = filename
     args['jarid'] = jarid
     args['jobid'] = jobid
+    args['job_path'] = full_path
     app.logger.info(args)
     # save to db
     shelf = db_handler.get_db('jobs.db')
