@@ -12,6 +12,9 @@ __pycache__/
 # jars
 jars/
 
+# jobs
+*.db
+
 # Distribution / packaging
 .Python
 build/

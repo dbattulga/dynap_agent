@@ -58,7 +58,7 @@ taskmanager.memory.process.size: 1728m
 
 # The number of task slots that each TaskManager offers. Each slot runs one parallel pipeline.
 
-taskmanager.numberOfTaskSlots: 1
+taskmanager.numberOfTaskSlots: 2
 
 # The parallelism used for programs that did not specify and other parallelism.
 
@@ -271,7 +271,7 @@ web.submit.enable: true
 # single - Track latency without differentiating between sources and subtasks.
 # operator - Track latency while differentiating between sources, but not subtasks.
 # subtask - Track latency while differentiating between sources and subtasks.
-metrics.latency.granularity: operator
+metrics.latency.granularity: single
 
 #Defines the number of measured latencies to maintain at each operator.
 metrics.latency.history-size: 128
@@ -280,3 +280,12 @@ metrics.latency.history-size: 128
 # Disables latency tracking if set to 0 or a negative value. 
 # Enabling this feature can significantly impact the performance of the cluster.
 metrics.latency.interval: 1
+
+
+# Flag indicating whether Flink should report system resource 
+# metrics such as machine's CPU, memory or network usage
+metrics.system-resource: true
+
+# Interval between probing of system resource metrics specified in milliseconds. 
+# Has an effect only when 'metrics.system-resource' is enabled.
+metrics.system-resource-probing-interval: 1000

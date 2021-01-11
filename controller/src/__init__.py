@@ -4,6 +4,7 @@ import shelve
 import logging
 import json
 import uuid
+import requests
 
 from flask import Flask, g, send_file, redirect, render_template, url_for
 from flask_restful import Resource, Api, reqparse
@@ -49,18 +50,22 @@ def receive_file():
         return '404'
 
 
-@app.route('/test', methods=['GET'])
+# WARNING: Do not send already running job to its own instance!
+# it will delete the running job with a same name
+@app.route('/send', methods=['GET'])
 def send_file():
     shelf = db_handler.get_db('jobs.db')
     key = 'A_job'
     #url = shelf[key]['agent_address']
-    url = 'http://10.188.166.99'
+    url = 'http://10.188.150.130'
+    source_broker = shelf[key]['source_broker']
+    sink_broker = shelf[key]['sink_broker']
 
     body = {'pipeline_name': shelf[key]['pipeline_name'],
             'job_name': shelf[key]['job_name'],
-            'agent_address': shelf[key]['agent_address'],
-            'source_broker': shelf[key]['source_broker'],
-            'sink_broker': shelf[key]['sink_broker'],
+            'agent_address': url,
+            'source_broker': source_broker,
+            'sink_broker': sink_broker,
             'source_topic': shelf[key]['source_topic'],
             'sink_topic': shelf[key]['sink_topic'],
             'entry_class': shelf[key]['entry_class']
@@ -72,7 +77,7 @@ def send_file():
         ]
     req = requests.post(url + ":5001/upload", files=files)
     delete_job(key)
-    return req
+    return '200'
 
 
 daats = {'pipeline_name': 'first_pipe', 
@@ -86,16 +91,16 @@ daats = {'pipeline_name': 'first_pipe',
         }
 
 
-@app.route('/show', methods=['GET'])
+@app.route('/jobs', methods=['GET'])
 def list_job():
     stuff = db_handler.list_db('jobs.db')
     return {'message': 'Success', 'data': stuff}, 200
 
 
-@app.route('/delete', methods=['GET'])
-def delete_job():
+@app.route('/delete/<key>', methods=['GET'])
+def delete_job(key):
     shelf = db_handler.get_db('jobs.db')
-    key = 'A_job'
+    #key = 'A_job'
     if not (key in shelf):
         return {'message': 'Job not found', 'data': {}}, 404
     host = shelf[key]['agent_address'] + ':' + spe_port
@@ -105,7 +110,7 @@ def delete_job():
         os.remove(shelf[key]['job_path'])
     del shelf[key]
     shelf.close()
-    return '200'
+    return 'deleted'
 
 
 # integrate port numbers with corresponding addresses
