@@ -9,6 +9,9 @@ __pycache__/
 #vscode
 .vscode
 
+# jars
+jars/
+
 # Distribution / packaging
 .Python
 build/
