@@ -6,7 +6,8 @@ services:
     image: digitaljazz/flink-1.11.3-armv7:latest
     ports:
       - "8081:8081"
-    command: jobmanager
+    #command: jobmanager
+    command: jobmanager.sh start-foreground jobmanager
     volumes:
       - ./config/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml:ro
       - ./config/flink-metrics-prometheus-1.11.3.jar:/opt/flink/lib/flink-metrics-prometheus-1.11.3.jar
@@ -18,11 +19,10 @@ services:
   taskmanager:
     #image: flink:1.11.3
     image: digitaljazz/flink-1.11.3-armv7:latest
-    #ports:
-    #  - 9251:9999
     depends_on:
       - jobmanager
-    command: taskmanager
+    #command: taskmanager
+    command: taskmanager.sh start-foreground -Djobmanager.rpc.address=jobmanager
     volumes:
       - ./config/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml:ro
       - ./config/flink-metrics-prometheus-1.11.3.jar:/opt/flink/lib/flink-metrics-prometheus-1.11.3.jar
