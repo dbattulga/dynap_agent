@@ -2,7 +2,8 @@ version: '3'
 services:
 
   jobmanager:
-    image: flink:1.11.3
+    #image: flink:1.11.3
+    image: digitaljazz/flink-1.11.3-armv7:latest
     ports:
       - "8081:8081"
     command: jobmanager
@@ -15,7 +16,8 @@ services:
         jobmanager.rpc.address: jobmanager
 
   taskmanager:
-    image: flink:1.11.3
+    #image: flink:1.11.3
+    image: digitaljazz/flink-1.11.3-armv7:latest
     #ports:
     #  - 9251:9999
     depends_on:
