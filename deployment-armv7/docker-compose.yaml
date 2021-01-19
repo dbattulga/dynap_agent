@@ -2,10 +2,12 @@ version: '3'
 services:
 
   jobmanager:
-    image: flink:1.11.3
+    #image: flink:1.11.3
+    image: digitaljazz/flink-1.11.3-armv7:latest
     ports:
       - "8081:8081"
-    command: jobmanager
+    #command: jobmanager
+    command: jobmanager.sh start-foreground jobmanager
     volumes:
       - ./config/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml:ro
       - ./config/flink-metrics-prometheus-1.11.3.jar:/opt/flink/lib/flink-metrics-prometheus-1.11.3.jar
@@ -15,12 +17,12 @@ services:
         jobmanager.rpc.address: jobmanager
 
   taskmanager:
-    image: flink:1.11.3
-    #ports:
-    #  - 9251:9999
+    #image: flink:1.11.3
+    image: digitaljazz/flink-1.11.3-armv7:latest
     depends_on:
       - jobmanager
-    command: taskmanager
+    #command: taskmanager
+    command: taskmanager.sh start-foreground -Djobmanager.rpc.address=jobmanager
     volumes:
       - ./config/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml:ro
       - ./config/flink-metrics-prometheus-1.11.3.jar:/opt/flink/lib/flink-metrics-prometheus-1.11.3.jar
@@ -48,7 +50,8 @@ services:
       - '9100:9100'
 
   cadvisor:
-    image: google/cadvisor:latest
+    #image: google/cadvisor:latest
+    image: budry/cadvisor-arm
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
