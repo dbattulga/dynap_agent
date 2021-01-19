@@ -9,8 +9,8 @@ services:
     #command: jobmanager
     command: jobmanager.sh start-foreground jobmanager
     volumes:
-      - ./config/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml:ro
-      - ./config/flink-metrics-prometheus-1.11.3.jar:/opt/flink/lib/flink-metrics-prometheus-1.11.3.jar
+      - ./config/flink-conf.yaml:/flink/conf/flink-conf.yaml:ro
+      - ./config/flink-metrics-prometheus-1.11.3.jar:/flink/lib/flink-metrics-prometheus-1.11.3.jar
     environment:
       - |
         FLINK_PROPERTIES=
@@ -24,8 +24,8 @@ services:
     #command: taskmanager
     command: taskmanager.sh start-foreground -Djobmanager.rpc.address=jobmanager
     volumes:
-      - ./config/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml:ro
-      - ./config/flink-metrics-prometheus-1.11.3.jar:/opt/flink/lib/flink-metrics-prometheus-1.11.3.jar
+      - ./config/flink-conf.yaml:/flink/conf/flink-conf.yaml:ro
+      - ./config/flink-metrics-prometheus-1.11.3.jar:/flink/lib/flink-metrics-prometheus-1.11.3.jar
     scale: 1
     environment:
       - |
