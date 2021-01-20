@@ -31,10 +31,15 @@ def get_ip():
 #print(s.getsockname()[0])
 #s.close()
 
+#for ifaceName in interfaces():
+#    addresses = [i['addr'] for i in ifaddresses(ifaceName).setdefault(AF_INET, [{'addr':'No IP addr'}] )]
+#    print ('%s: %s' % (ifaceName, ', '.join(addresses)))
+#print(get_ip())
 
+def request():
+    key = '192.168.2.147'
+    url = 'http://'+key
+    res = requests.get(url + ":5001/pseudo_deploy")
+    return res
 
-for ifaceName in interfaces():
-    addresses = [i['addr'] for i in ifaddresses(ifaceName).setdefault(AF_INET, [{'addr':'No IP addr'}] )]
-    print ('%s: %s' % (ifaceName, ', '.join(addresses)))
-
-print(get_ip())
+print( request())

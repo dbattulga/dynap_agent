@@ -6,6 +6,7 @@ import json
 import uuid
 import requests
 import socket
+import time
 
 from flask import Flask, g, send_file, redirect, render_template, url_for
 from flask_restful import Resource, Api, reqparse
@@ -154,7 +155,7 @@ def get_ip():
     return IP
 
 
-#handshake response
+# handshake response
 @app.route('/check_available', methods=['GET'])
 def check_available():
     # url = own ip address
@@ -172,13 +173,13 @@ def check_available():
     current_connections = shelf['state']
     if available_taskslots - current_connections > 0:
         shelf['state'] = current_connections + 1
-        return 'available for connection'
+        return '200' #available for connection
     else:
-        return 'not available for more jobs'
+        return '500' #not available for more jobs
     shelf.close()
 
 
-#handshake response
+# check number of current connections
 @app.route('/check_state', methods=['GET'])
 def check_state():
     shelf = db_handler.get_db('state.db')
@@ -188,7 +189,8 @@ def check_state():
     shelf.close()
     return 'current_connections:' + str(state)
 
-#handshake response
+
+# clear current connections
 @app.route('/clear_state', methods=['GET'])
 def clear_state():
     shelf = db_handler.get_db('state.db')
@@ -196,9 +198,31 @@ def clear_state():
     shelf.close()
     return 'state cleared'
 
-#handshake request
-@app.route('/hsrequest', methods=['GET'])
-def hs_request():
-    #host = '172.20.192.10'
-    #return {'message': 'Success', 'data': stuff}, 200
-    return 200
+
+# handshake request
+@app.route('/hs_request/<key>', methods=['GET'])
+def hs_request(key):
+    url = 'http://'+key
+    res = requests.get(url + ":5001/check_available")
+    app.logger.info(res.status_code)
+    if str(res.status_code) == '200':
+        # she said yes, sending job now
+        # send job
+        # wait for the job deploy response
+        deploy = requests.get(url + ":5001/pseudo_deploy")
+        app.logger.info(deploy)
+        return 'she said yes and migrated'
+        
+    return 'she said no :('
+
+
+# handshake request
+@app.route('/pseudo_deploy', methods=['GET'])
+def pseudo_deploy():
+    time.sleep(10)
+    shelf = db_handler.get_db('state.db')
+    state = shelf['state']
+    if state != 0:
+        shelf['state'] = state - 1
+    shelf.close()
+    return 'deployed'
