@@ -12,13 +12,15 @@ from threading import Lock
 from flask import Flask, g, redirect, render_template, url_for
 from flask_restful import Resource, Api, reqparse
 from flask import request
+from flask.logging import create_logger
 from src import spe_handler, db_handler, metrics_handler
 
 logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 api = Api(app)
+log = create_logger(app)
 
-#mutex = Lock()
+mutex = Lock()
 
 job_path = '/usr/src/app/jars'
 spe_port = '8081'
@@ -27,6 +29,9 @@ broker_port = '1883'
 # app.logger.warning('testing warning log')
 # app.logger.error('testing error log')
 # app.logger.info('testing info log')
+
+# log.debug('A debug message')
+# log.error('An error message')
 
 # example data format
 #  daats = {'pipeline_name': 'first_pipe', 
@@ -139,7 +144,7 @@ def start_job(args, filename):
     args['jarid'] = jarid
     args['jobid'] = jobid
     args['job_path'] = full_path
-    app.logger.info(args)
+    log.debug(args)
     # save to db
     shelf = db_handler.get_db('jobs.db')
     shelf[args['job_name']] = args
@@ -161,9 +166,11 @@ def check_available():
     state = shelf['state']
 
     if available_taskslots - state > 0:
+        #time.sleep(10)
         state += 1
         shelf['state'] = state
         shelf.close()
+        #mutex.release()
         return {'message': 'Success', 'data': state}, 200
 
     shelf.close()
@@ -196,10 +203,11 @@ def clear_state():
 def hs_request(key):
     url = 'http://'+key
     res = requests.get(url + ":5001/check_available")
+    log.debug('RES STATUS CODE: '+str(res.status_code))
     if res.status_code == 200:
-        app.logger.info('DEPLOYING PSEUDO DEPLOY FUNCTION')
+        log.debug('DEPLOYING PSEUDO DEPLOY FUNCTION')
         deploy = requests.get(url + ":5001/pseudo_deploy")
-        app.logger.info(deploy)
+        log.debug(deploy)
         return {'message': 'Success'}, 200
     return {'message': 'Failed'}, 500
 
@@ -207,9 +215,9 @@ def hs_request(key):
 # handshake request
 @app.route('/pseudo_deploy', methods=['GET'])
 def pseudo_deploy():
-    app.logger.info('STARTED SLEEPING')
-    time.sleep(30)
-    app.logger.info('FINISHED SLEEPING')
+    log.debug('STARTED SLEEPING')
+    time.sleep(10)
+    log.debug('FINISHED SLEEPING')
     shelf = db_handler.get_db('state.db')
     state = shelf['state']
     if state != 0:
@@ -218,24 +226,3 @@ def pseudo_deploy():
     shelf.close()
     return {'message': 'Deployed'}, 200
 
-
-# handshake response
-@app.route('/pseudo_handshake', methods=['GET'])
-def pseudo_handshake():
-    url = request.remote_addr
-    base_url = 'http://'+url
-    available_taskslots = int(metrics_handler.get_available_task_slots(base_url))
-    
-    shelf = db_handler.get_db('state.db')
-    if not ('state' in shelf):
-        shelf['state'] = 0
-    state = shelf['state']
-
-    if available_taskslots - state > 0:
-        state += 1
-        shelf['state'] = state
-        shelf.close()
-        return {'message': 'Success', 'data': state}, 200
-
-    shelf.close()
-    return {'message': 'Failed', 'data': state}, 500
