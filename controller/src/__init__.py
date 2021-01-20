@@ -233,9 +233,10 @@ def pseudo_handshake():
     state = shelf['state']
 
     if available_taskslots - state > 0:
-        shelf['state'] = state + 1
+        state += 1
+        shelf['state'] = state
         shelf.close()
-        return '200' #available for connection
+        return {'message': 'Success', 'data': state}, 200
 
     shelf.close()
-    return '500' #not available for more jobs
+    return {'message': 'Failed', 'data': state}, 500

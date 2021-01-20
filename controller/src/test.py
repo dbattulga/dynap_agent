@@ -46,6 +46,6 @@ def requestt():
     key = '192.168.2.147'
     url = 'http://'+key
     res = requests.get(url + ':5001/pseudo_handshake')
-    return res
+    return res._content
 
 print( requestt() )
