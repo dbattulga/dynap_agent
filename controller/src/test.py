@@ -39,7 +39,7 @@ def get_ip():
 def request():
     key = '192.168.2.147'
     url = 'http://'+key
-    res = requests.get(url + ":5001/pseudo_deploy")
+    res = requests.get(url + ":5001/hs_request/" + key)
     return res
 
 print( request())
