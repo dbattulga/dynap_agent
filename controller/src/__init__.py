@@ -185,8 +185,16 @@ def check_state():
     if not ('state' in shelf):
         shelf['state'] = 0
     state = shelf['state']
+    shelf.close()
     return 'current_connections:' + str(state)
 
+#handshake response
+@app.route('/clear_state', methods=['GET'])
+def clear_state():
+    shelf = db_handler.get_db('state.db')
+    shelf['state'] = 0
+    shelf.close()
+    return 'state cleared'
 
 #handshake request
 @app.route('/hsrequest', methods=['GET'])
