@@ -42,4 +42,10 @@ def request():
     res = requests.get(url + ":5001/hs_request/" + key)
     return res
 
-print( request())
+def requestt():
+    key = '192.168.2.147'
+    url = 'http://'+key
+    res = requests.get(url + ':5001/pseudo_handshake')
+    return res
+
+print( requestt() )

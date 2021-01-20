@@ -7,8 +7,9 @@ import uuid
 import requests
 import socket
 import time
+from threading import Lock
 
-from flask import Flask, g, send_file, redirect, render_template, url_for
+from flask import Flask, g, redirect, render_template, url_for
 from flask_restful import Resource, Api, reqparse
 from flask import request
 from src import spe_handler, db_handler, metrics_handler
@@ -17,13 +18,26 @@ logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 api = Api(app)
 
+#mutex = Lock()
+
 job_path = '/usr/src/app/jars'
 spe_port = '8081'
 broker_port = '1883'
 
- # app.logger.warning('testing warning log')
- # app.logger.error('testing error log')
- # app.logger.info('testing info log')
+# app.logger.warning('testing warning log')
+# app.logger.error('testing error log')
+# app.logger.info('testing info log')
+
+# example data format
+#  daats = {'pipeline_name': 'first_pipe', 
+#         'job_name': 'A_job', 
+#         'agent_address': 'http://10.188.166.99', 
+#         'source_broker': 'tcp://10.188.166.99', 
+#         'sink_broker': 'tcp://10.188.166.99', 
+#         'source_topic': 'T-1', 
+#         'sink_topic': 'T-2', 
+#         'entry_class': 'flinkpackage.OperatorStreamOne'
+#         }
 
 @app.route("/")
 def index():
@@ -82,35 +96,26 @@ def send_file():
     return '200'
 
 
-daats = {'pipeline_name': 'first_pipe', 
-        'job_name': 'A_job', 
-        'agent_address': 'http://10.188.166.99', 
-        'source_broker': 'tcp://10.188.166.99', 
-        'sink_broker': 'tcp://10.188.166.99', 
-        'source_topic': 'T-1', 
-        'sink_topic': 'T-2', 
-        'entry_class': 'flinkpackage.OperatorStreamOne'
-        }
-
-
+# show list of jobs
 @app.route('/jobs', methods=['GET'])
 def list_job():
     stuff = db_handler.list_db('jobs.db')
     return {'message': 'Success', 'data': stuff}, 200
 
 
-@app.route('/delete/<key>', methods=['GET'])
-def delete_job(key):
+# delete job, jobname = key
+@app.route('/delete/<jobname>', methods=['GET'])
+def delete_job(jobname):
     shelf = db_handler.get_db('jobs.db')
-    #key = 'A_job'
-    if not (key in shelf):
+    #jobname = 'A_job'
+    if not (jobname in shelf):
         return {'message': 'Job not found', 'data': {}}, 404
-    host = shelf[key]['agent_address'] + ':' + spe_port
-    spe_handler.delete_jar(host, shelf[key]['jarid'])
-    spe_handler.stop_job(host, shelf[key]['jobid'])
-    if os.path.exists(shelf[key]['job_path']):
-        os.remove(shelf[key]['job_path'])
-    del shelf[key]
+    host = shelf[jobname]['agent_address'] + ':' + spe_port
+    spe_handler.delete_jar(host, shelf[jobname]['jarid'])
+    spe_handler.stop_job(host, shelf[jobname]['jobid'])
+    if os.path.exists(shelf[jobname]['job_path']):
+        os.remove(shelf[jobname]['job_path'])
+    del shelf[jobname]
     shelf.close()
     return 'deleted'
 
@@ -142,41 +147,30 @@ def start_job(args, filename):
     return '200'
 
 
-def get_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        # doesn't even have to be reachable
-        s.connect(('10.255.255.255', 1))
-        IP = s.getsockname()[0]
-    except Exception:
-        IP = '127.0.0.1'
-    finally:
-        s.close()
-    return IP
-
-
 # handshake response
 @app.route('/check_available', methods=['GET'])
 def check_available():
-    # url = own ip address
-    #url = shelf[key]['agent_address']
-    #url = 'http://10.188.166.99' 
-    #url = request.environ['REMOTE_ADDR']
-    #url = get_ip()
-
     url = request.remote_addr
     base_url = 'http://'+url
     available_taskslots = int(metrics_handler.get_available_task_slots(base_url))
+    #mutex.acquire()
+    #app.logger.info(mutex)
     shelf = db_handler.get_db('state.db')
     if not ('state' in shelf):
         shelf['state'] = 0
-    current_connections = shelf['state']
-    if available_taskslots - current_connections > 0:
-        shelf['state'] = current_connections + 1
+    state = shelf['state']
+    if available_taskslots - state > 0:
+        #app.logger.info('SLEEPING BEFORE MODIFICATION')
+        #time.sleep(10)
+        #app.logger.info('FINISHED SLEEPING MODIFICATION')
+        shelf['state'] = state + 1
+        shelf.close()
+        #mutex.release()
         return '200' #available for connection
-    else:
-        return '500' #not available for more jobs
+
     shelf.close()
+    #mutex.release()
+    return '500' #not available for more jobs
 
 
 # check number of current connections
@@ -204,25 +198,44 @@ def clear_state():
 def hs_request(key):
     url = 'http://'+key
     res = requests.get(url + ":5001/check_available")
-    app.logger.info(res.status_code)
     if str(res.status_code) == '200':
-        # she said yes, sending job now
-        # send job
-        # wait for the job deploy response
+        app.logger.info('DEPLOYING PSEUDO DEPLOY FUNCTION')
         deploy = requests.get(url + ":5001/pseudo_deploy")
         app.logger.info(deploy)
         return 'she said yes and migrated'
-        
     return 'she said no :('
 
 
 # handshake request
 @app.route('/pseudo_deploy', methods=['GET'])
 def pseudo_deploy():
-    time.sleep(10)
+    app.logger.info('STARTED SLEEPING')
+    time.sleep(30)
+    app.logger.info('FINISHED SLEEPING')
     shelf = db_handler.get_db('state.db')
     state = shelf['state']
     if state != 0:
         shelf['state'] = state - 1
     shelf.close()
     return 'deployed'
+
+
+# handshake response
+@app.route('/pseudo_handshake', methods=['GET'])
+def pseudo_handshake():
+    url = request.remote_addr
+    base_url = 'http://'+url
+    available_taskslots = int(metrics_handler.get_available_task_slots(base_url))
+    
+    shelf = db_handler.get_db('state.db')
+    if not ('state' in shelf):
+        shelf['state'] = 0
+    state = shelf['state']
+
+    if available_taskslots - state > 0:
+        shelf['state'] = state + 1
+        shelf.close()
+        return '200' #available for connection
+
+    shelf.close()
+    return '500' #not available for more jobs
