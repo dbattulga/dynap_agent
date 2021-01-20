@@ -5,12 +5,12 @@ import logging
 import json
 import uuid
 import requests
+import socket
 
 from flask import Flask, g, send_file, redirect, render_template, url_for
 from flask_restful import Resource, Api, reqparse
 from flask import request
-from src import spe_handler
-from src import db_handler
+from src import spe_handler, db_handler, metrics_handler
 
 logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
@@ -76,7 +76,8 @@ def send_file():
             ('data', ('data', json.dumps(body), 'application/json')),
         ]
     req = requests.post(url + ":5001/upload", files=files)
-    delete_job(key)
+    if req == '200':
+        delete_job(key)
     return '200'
 
 
@@ -139,3 +140,57 @@ def start_job(args, filename):
     shelf.close()
     return '200'
 
+
+def get_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('10.255.255.255', 1))
+        IP = s.getsockname()[0]
+    except Exception:
+        IP = '127.0.0.1'
+    finally:
+        s.close()
+    return IP
+
+
+#handshake response
+@app.route('/check_available', methods=['GET'])
+def check_available():
+    # url = own ip address
+    #url = shelf[key]['agent_address']
+    #url = 'http://10.188.166.99' 
+    #url = request.environ['REMOTE_ADDR']
+    #url = get_ip()
+
+    url = request.remote_addr
+    base_url = 'http://'+url
+    available_taskslots = int(metrics_handler.get_available_task_slots(base_url))
+    shelf = db_handler.get_db('state.db')
+    if not ('state' in shelf):
+        shelf['state'] = 0
+    current_connections = shelf['state']
+    if available_taskslots - current_connections > 0:
+        shelf['state'] = current_connections + 1
+        return 'available for connection'
+    else:
+        return 'not available for more jobs'
+    shelf.close()
+
+
+#handshake response
+@app.route('/check_state', methods=['GET'])
+def check_state():
+    shelf = db_handler.get_db('state.db')
+    if not ('state' in shelf):
+        shelf['state'] = 0
+    state = shelf['state']
+    return 'current_connections:' + str(state)
+
+
+#handshake request
+@app.route('/hsrequest', methods=['GET'])
+def hs_request():
+    #host = '172.20.192.10'
+    #return {'message': 'Success', 'data': stuff}, 200
+    return 200
