@@ -4,14 +4,14 @@ import os
 import shelve
 import datetime
 import time
-from flask import g
+#from flask import g
 import socket
-from netifaces import interfaces, ifaddresses, AF_INET
+#from netifaces import interfaces, ifaddresses, AF_INET
 
-from flask import Flask, g, send_file, redirect, render_template, url_for
-from flask_restful import Resource, Api, reqparse
-from flask import request
-import spe_handler, db_handler, metrics_handler
+#from flask import Flask, g, send_file, redirect, render_template, url_for
+#from flask_restful import Resource, Api, reqparse
+#from flask import request
+#import spe_handler, db_handler, metrics_handler
 
 def get_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
