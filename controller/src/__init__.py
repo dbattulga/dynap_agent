@@ -153,24 +153,22 @@ def check_available():
     url = request.remote_addr
     base_url = 'http://'+url
     available_taskslots = int(metrics_handler.get_available_task_slots(base_url))
+
     #mutex.acquire()
-    #app.logger.info(mutex)
     shelf = db_handler.get_db('state.db')
     if not ('state' in shelf):
         shelf['state'] = 0
     state = shelf['state']
+
     if available_taskslots - state > 0:
-        #app.logger.info('SLEEPING BEFORE MODIFICATION')
-        #time.sleep(10)
-        #app.logger.info('FINISHED SLEEPING MODIFICATION')
-        shelf['state'] = state + 1
+        state += 1
+        shelf['state'] = state
         shelf.close()
-        #mutex.release()
-        return '200' #available for connection
+        return {'message': 'Success', 'data': state}, 200
 
     shelf.close()
     #mutex.release()
-    return '500' #not available for more jobs
+    return {'message': 'Failed', 'data': state}, 500
 
 
 # check number of current connections
@@ -198,12 +196,12 @@ def clear_state():
 def hs_request(key):
     url = 'http://'+key
     res = requests.get(url + ":5001/check_available")
-    if str(res.status_code) == '200':
+    if res.status_code == 200:
         app.logger.info('DEPLOYING PSEUDO DEPLOY FUNCTION')
         deploy = requests.get(url + ":5001/pseudo_deploy")
         app.logger.info(deploy)
-        return 'she said yes and migrated'
-    return 'she said no :('
+        return {'message': 'Success'}, 200
+    return {'message': 'Failed'}, 500
 
 
 # handshake request
@@ -215,9 +213,10 @@ def pseudo_deploy():
     shelf = db_handler.get_db('state.db')
     state = shelf['state']
     if state != 0:
-        shelf['state'] = state - 1
+        state = state - 1
+        shelf['state'] = state
     shelf.close()
-    return 'deployed'
+    return {'message': 'Deployed'}, 200
 
 
 # handshake response

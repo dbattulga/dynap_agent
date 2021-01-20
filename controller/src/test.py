@@ -48,4 +48,4 @@ def requestt():
     res = requests.get(url + ':5001/pseudo_handshake')
     return res._content
 
-print( requestt() )
+print( request() )
