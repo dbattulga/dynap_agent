@@ -64,7 +64,7 @@ def send_file(url, job):
     key = job
     base_url = "http://"+url
     source_broker = shelf[key]['source_broker']
-    sink_broker = "tcp://"+url
+    sink_broker = "tcp://"+url+":1883"
 
     body = {'pipeline_name': shelf[key]['pipeline_name'],
             'job_name': shelf[key]['job_name'],
