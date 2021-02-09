@@ -190,15 +190,15 @@ def clear_connections():
 # remember, the key id is just an interface
 # handshake request
 @app.route('/syn_request/<url>/<job>', methods=['GET'])
-def syn_request(url, job):
-    target_url = "sth"
-    base_url = 'http://'+url
-    res = requests.get(base_url + ":5001/syn_response")
+def syn_request(targeturl, job):
+    #url = request.remote_addr
+    res = requests.get("http://"+targeturl+ ":5001/syn_response")
     #log.debug('RES STATUS CODE: '+str(res.status_code))
     if res.status_code == 200:
         log.debug('DEPLOYING migration')
-        deploy = requests.get(base_url + ":5001/pseudo_deploy/" + job)
-        #deploy = requests.get(base_url + ":5001/send/"+base_url+"/"+ job)
+        #deploy = requests.get(target_url + ":5001/pseudo_deploy/" + job)
+        #deploy = requests.get(own_url + ":5001/send/"+base_url+"/"+ job)
+        deploy = send_file(targeturl, job)
         log.debug(deploy)
         return {'message': 'Success'}, 200
     return {'message': 'Failed'}, 500
