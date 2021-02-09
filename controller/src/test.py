@@ -48,4 +48,48 @@ def requestt():
     res = requests.get(url + ':5001/pseudo_handshake')
     return res._content
 
-print( request() )
+def start_jar():
+    jobname = "A_job"
+    sourcemqtt = ["tcp://192.168.2.147:1883", "tcp://192.168.2.147:1883", "tcp://192.168.2.147:1883"]
+    sinkmqtt = "tcp://192.168.2.147:1883"
+    sinktopic = ["T1", "T2"]
+    sourcetopic = ["T3", "T4"]
+    
+    sourcebrokers = ','.join(sourcemqtt)
+    sourcetopics = ','.join(sourcetopic)
+    sinktopics = ','.join(sinktopic)
+    sinkbroker = sinkmqtt
+    programArgs = "--jobname "+jobname+" --sourcemqtt "+sourcebrokers+" --sinkmqtt "+sinkbroker+" --sourcetopic "+sourcetopics+" --sinktopic "+sinktopics
+    return programArgs
+
+def start_jarr():
+    
+    base_url = "http://192.168.2.147:8081"
+    jarid = "29166309-6b43-4555-8e67-326f497a9dfc_aa6024f5-9b11-407b-b414-bea3bc847b05.jar"
+    entryclass = "flinkpackage.MultiSourceTest"
+    jobname = "A_job"
+    sourcemqtt = ["tcp://192.168.2.147:1883", "tcp://192.168.2.147:1883", "tcp://192.168.2.147:1883"]
+    sinkmqtt = "tcp://192.168.2.147:1883"
+    sinktopic = ["T1", "T2"]
+    sourcetopic = ["T3", "T4"]
+
+
+    sourcebrokers = ','.join(sourcemqtt)
+    sourcetopics = ','.join(sourcetopic)
+    sinktopics = ','.join(sinktopic)
+    sinkbroker = sinkmqtt
+    programArgs = "--jobname '"+jobname+"' --sourcemqtt '"+sourcebrokers+"' --sinkmqtt '"+sinkbroker+"' --sourcetopic '"+sourcetopics+"' --sinktopic '"+sinktopics+"' "
+    propertiess = {
+        "entryClass": entryclass,
+        "programArgs": programArgs
+    }
+    start = requests.post(base_url + "/jars/"+jarid+"/run", json=propertiess)
+
+    if (start.ok):
+        response = json.loads(start.content)
+        if "jobid" in response:
+            return response["jobid"]
+    start.raise_for_status()
+    return start.status_code
+
+print( start_jarr() )

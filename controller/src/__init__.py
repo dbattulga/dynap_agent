@@ -21,28 +21,12 @@ api = Api(app)
 log = create_logger(app)
 
 mutex = Lock()
-
 job_path = '/usr/src/app/jars'
 spe_port = '8081'
 broker_port = '1883'
 
-# app.logger.warning('testing warning log')
-# app.logger.error('testing error log')
-# app.logger.info('testing info log')
-
 # log.debug('A debug message')
 # log.error('An error message')
-
-# example data format
-#  daats = {'pipeline_name': 'first_pipe', 
-#         'job_name': 'A_job', 
-#         'agent_address': 'http://10.188.166.99', 
-#         'source_broker': 'tcp://10.188.166.99', 
-#         'sink_broker': 'tcp://10.188.166.99', 
-#         'source_topic': 'T-1', 
-#         'sink_topic': 'T-2', 
-#         'entry_class': 'flinkpackage.OperatorStreamOne'
-#         }
 
 @app.route("/")
 def index():
@@ -65,25 +49,26 @@ def receive_file():
         uploaded_file.save(os.path.join(job_path, filename))
         # start the job
         msg = start_job(uploaded_data, filename)
+        log.debug(msg)
         return msg
     else:
-        return '404'
+        return {'message': 'Failed'}, 500
 
 
+# client request for uploading and starting a SPE job
 # WARNING: Do not send already running job to its own instance!
 # it will delete the running job with a same name
-@app.route('/send', methods=['GET'])
-def send_file():
+@app.route('/send/<url>/<job>', methods=['GET'])
+def send_file(url, job):
     shelf = db_handler.get_db('jobs.db')
-    key = 'A_job'
-    #url = shelf[key]['agent_address']
-    url = 'http://10.188.150.130'
+    key = job
+    base_url = url
     source_broker = shelf[key]['source_broker']
     sink_broker = shelf[key]['sink_broker']
 
     body = {'pipeline_name': shelf[key]['pipeline_name'],
             'job_name': shelf[key]['job_name'],
-            'agent_address': url,
+            'agent_address': base_url,
             'source_broker': source_broker,
             'sink_broker': sink_broker,
             'source_topic': shelf[key]['source_topic'],
@@ -95,13 +80,15 @@ def send_file():
             ('jar', ('test.jar', open(shelf[key]['job_path'], 'rb'), 'application/octet')),
             ('data', ('data', json.dumps(body), 'application/json')),
         ]
-    req = requests.post(url + ":5001/upload", files=files)
-    if req == '200':
+    req = requests.post(base_url + ":5001/upload", files=files)
+    if req.status_code == 200:
+    #if req == '200':
         delete_job(key)
-    return '200'
+    return {'message': 'Success'}, 200
 
 
 # show list of jobs
+# ONLY FOR DEBUGGING
 @app.route('/jobs', methods=['GET'])
 def list_job():
     stuff = db_handler.list_db('jobs.db')
@@ -109,10 +96,10 @@ def list_job():
 
 
 # delete job, jobname = key
-@app.route('/delete/<jobname>', methods=['GET'])
-def delete_job(jobname):
+@app.route('/delete/<job>', methods=['GET'])
+def delete_job(job):
     shelf = db_handler.get_db('jobs.db')
-    #jobname = 'A_job'
+    jobname = job
     if not (jobname in shelf):
         return {'message': 'Job not found', 'data': {}}, 404
     host = shelf[jobname]['agent_address'] + ':' + spe_port
@@ -125,16 +112,17 @@ def delete_job(jobname):
     return 'deleted'
 
 
-# integrate port numbers with corresponding addresses
-# flink address with 8081, mqtt with 1883
+# server side function to start job by submitting a jar to local SPE
+# integrate port number with corresponding address
+# flink address with 8081
 @app.route('/start', methods=['GET'])
 def start_job(args, filename):
     spe_addr = args['agent_address'] + ':' + spe_port
     full_path = job_path + '/' + filename
     entry_class = args['entry_class']
     job_name = args['job_name']
-    source_broker = args['source_broker'] + ':' + broker_port
-    sink_broker = args['sink_broker'] + ':' + broker_port
+    source_broker = args['source_broker']
+    sink_broker = args['sink_broker']
     source_topic = args['source_topic']
     sink_topic = args['sink_topic']
 
@@ -144,17 +132,17 @@ def start_job(args, filename):
     args['jarid'] = jarid
     args['jobid'] = jobid
     args['job_path'] = full_path
-    log.debug(args)
+    log.debug(jobid)
     # save to db
     shelf = db_handler.get_db('jobs.db')
     shelf[args['job_name']] = args
     shelf.close()
-    return '200'
+    return {'message': 'Job Started'}, 200
 
 
 # handshake response
-@app.route('/check_available', methods=['GET'])
-def check_available():
+@app.route('/syn_response', methods=['GET'])
+def syn_response():
     url = request.remote_addr
     base_url = 'http://'+url
     available_taskslots = int(metrics_handler.get_available_task_slots(base_url))
@@ -179,8 +167,8 @@ def check_available():
 
 
 # check number of current connections
-@app.route('/check_state', methods=['GET'])
-def check_state():
+@app.route('/check_connections', methods=['GET'])
+def check_connections():
     shelf = db_handler.get_db('state.db')
     if not ('state' in shelf):
         shelf['state'] = 0
@@ -190,34 +178,38 @@ def check_state():
 
 
 # clear current connections
-@app.route('/clear_state', methods=['GET'])
-def clear_state():
+# ONLY FOR DEBUGGING
+@app.route('/clear_connections', methods=['GET'])
+def clear_connections():
     shelf = db_handler.get_db('state.db')
     shelf['state'] = 0
     shelf.close()
     return 'state cleared'
 
 
+# remember, the key id is just an interface
 # handshake request
-@app.route('/hs_request/<key>', methods=['GET'])
-def hs_request(key):
-    url = 'http://'+key
-    res = requests.get(url + ":5001/check_available")
-    log.debug('RES STATUS CODE: '+str(res.status_code))
+@app.route('/syn_request/<url>/<job>', methods=['GET'])
+def syn_request(url, job):
+    target_url = "sth"
+    base_url = 'http://'+url
+    res = requests.get(base_url + ":5001/syn_response")
+    #log.debug('RES STATUS CODE: '+str(res.status_code))
     if res.status_code == 200:
-        log.debug('DEPLOYING PSEUDO DEPLOY FUNCTION')
-        deploy = requests.get(url + ":5001/pseudo_deploy")
+        log.debug('DEPLOYING migration')
+        deploy = requests.get(base_url + ":5001/pseudo_deploy/" + job)
+        #deploy = requests.get(base_url + ":5001/send/"+base_url+"/"+ job)
         log.debug(deploy)
         return {'message': 'Success'}, 200
     return {'message': 'Failed'}, 500
 
 
 # handshake request
-@app.route('/pseudo_deploy', methods=['GET'])
-def pseudo_deploy():
-    log.debug('STARTED SLEEPING')
+@app.route('/pseudo_deploy/<job>', methods=['GET'])
+def pseudo_deploy(job):
+    log.debug('STARTED SLEEPING ' + job)
     time.sleep(10)
-    log.debug('FINISHED SLEEPING')
+    log.debug('FINISHED SLEEPING ' + job)
     shelf = db_handler.get_db('state.db')
     state = shelf['state']
     if state != 0:

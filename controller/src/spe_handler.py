@@ -29,7 +29,11 @@ def get_upload_id(str):
 
 # starts job with parameters, successful: returns jobid else "failed"
 def start_jar(base_url, jarid, entryclass, sourcemqtt, sinkmqtt, sourcetopic, sinktopic, jobname):
-    programArgs = "--jobname "+jobname+" --sourcemqtt "+sourcemqtt+" --sinkmqtt "+sinkmqtt+" --sourcetopic "+sourcetopic+" --sinktopic "+sinktopic
+    sourcebrokers = ','.join(sourcemqtt)
+    sourcetopics = ','.join(sourcetopic)
+    sinktopics = ','.join(sinktopic)
+    sinkbroker = sinkmqtt
+    programArgs = "--jobname '"+jobname+"' --sourcemqtt '"+sourcebrokers+"' --sinkmqtt '"+sinkbroker+"' --sourcetopic '"+sourcetopics+"' --sinktopic '"+sinktopics+"' "
     propertiess = {
         "entryClass": entryclass,
         "programArgs": programArgs
@@ -48,7 +52,6 @@ def delete_jar(base_url, jarid):
     delete = requests.delete(base_url + "/jars/" +jarid)
     if (delete.ok):
         response = json.loads(delete.content)
-        #print(response)
     else:
         delete.raise_for_status()
     return delete.status_code
@@ -58,7 +61,6 @@ def stop_job(base_url, jobid):
     stop = requests.patch(base_url + "/jobs/" + jobid)
     if (stop.ok):
         response = json.loads(stop.content)
-        #print(response)
     else:
         stop.raise_for_status()
     return stop.status_code
