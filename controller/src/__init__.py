@@ -62,9 +62,9 @@ def receive_file():
 def send_file(url, job):
     shelf = db_handler.get_db('jobs.db')
     key = job
-    base_url = url
+    base_url = "http://"+url
     source_broker = shelf[key]['source_broker']
-    sink_broker = shelf[key]['sink_broker']
+    sink_broker = "tcp://"+url
 
     body = {'pipeline_name': shelf[key]['pipeline_name'],
             'job_name': shelf[key]['job_name'],
