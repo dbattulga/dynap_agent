@@ -64,3 +64,19 @@ def stop_job(base_url, jobid):
     else:
         stop.raise_for_status()
     return stop.status_code
+
+# restart job with given arguments: 
+# flink url:in this case local address
+# jobid: of the stopping job
+# jarid: of the starting job
+# entryclass: old entryclass
+# sourcemqtt: NEW source address list[]
+# sinkmqtt: old sink address
+# sourcetopic: NEW source address list[]
+# sinktopic: old sink topic
+# jobname: old jobname
+# on successful restart, returns new jobname
+def restart_job(base_url, jobid, jarid, entryclass, sourcemqtt, sinkmqtt, sourcetopic, sinktopic, jobname):
+    stop_job(base_url, jobid)
+    jobid = start_jar(base_url, jarid, entryclass, sourcemqtt, sinkmqtt, sourcetopic, sinktopic, jobname)
+    return jobid
