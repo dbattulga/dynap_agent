@@ -13,6 +13,8 @@ services:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
+    networks:
+      - monitoring
 
   taskmanager:
     image: flink:1.11.3
@@ -29,6 +31,8 @@ services:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
+    networks:
+      - monitoring
   
   prometheus:
     image: prom/prometheus:latest
@@ -41,11 +45,15 @@ services:
     restart: unless-stopped
     ports:
       - '9090:9090'
+    networks:
+      - monitoring
 
   node-exporter:
     image: prom/node-exporter
     ports:
-      - '9100:9100'
+      - '9100:9100' #host port: container port
+    networks:
+      - monitoring
 
   cadvisor:
     image: google/cadvisor:latest
@@ -56,6 +64,8 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
     ports:
       - '8080:8080'
+    networks:
+      - monitoring
 
   mosquitto:
     image: eclipse-mosquitto
@@ -69,3 +79,10 @@ services:
       - "9001:9001"
     #volumes:
     #  - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    networks:
+      - monitoring
+
+
+networks:
+  monitoring:
+    driver: bridge

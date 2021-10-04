@@ -69,7 +69,7 @@ conf = (
     Configuration
     .from_settings(
         job_type="allow_classic_ssh",
-        job_name="MTestJob",
+        job_name="ATestJob",
         walltime='0:30:00'
         #env_name="/grid5000/images/debian9-x64-base-2020032721.tgz"
     )
@@ -83,7 +83,7 @@ conf = (
     #.add_network_conf(network_lille)
     # .add_machine(
     #     roles=["control"],
-    #     cluster="parapide",
+    #     cluster="paravance",
     #     nodes=1,
     #     primary_network=network_rennes
     # )
