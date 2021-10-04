@@ -1,0 +1,10 @@
+On Grid5000:
+
+$ virtualenv venv2
+$ source venv2/bin/activate
+$ pip3 install -U pip
+$ pip3 install enoslib
+
+launch the script:
+
+$ python g5k_conf.py

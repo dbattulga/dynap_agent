@@ -24,7 +24,7 @@ services:
     volumes:
       - ./config/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml:ro
       - ./config/flink-metrics-prometheus-1.11.3.jar:/opt/flink/lib/flink-metrics-prometheus-1.11.3.jar
-    scale: 1
+    #scale: 1
     environment:
       - |
         FLINK_PROPERTIES=
