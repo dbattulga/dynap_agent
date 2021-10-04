@@ -1,9 +1,9 @@
+
 from enoslib.api import run_command #, wait_ssh
 from enoslib.infra.enos_g5k.provider import G5k
 from enoslib.infra.enos_g5k.configuration import Configuration, NetworkConfiguration
 
 import logging
-import os
 
 
 logging.basicConfig(level=logging.INFO)
@@ -69,7 +69,7 @@ conf = (
     Configuration
     .from_settings(
         job_type="allow_classic_ssh",
-        job_name="ATestJob",
+        job_name="DTestJob",
         walltime='0:30:00'
         #env_name="/grid5000/images/debian9-x64-base-2020032721.tgz"
     )
@@ -102,7 +102,7 @@ conf = (
     .add_machine(
         roles=["control"],
         cluster="petitprince",
-        nodes=1,
+        nodes=2,
         primary_network=network_luxembourg
     )
     # .add_machine(
@@ -154,11 +154,12 @@ run_command("rm -rf dynap_agent", roles=roles)
 run_command("git clone https://github.com/jazz09/dynap_agent.git", roles=roles)
 run_command("cd dynap_agent/deployment/ && docker-compose up -d", roles=roles)
 
-#run dummy container
-#run_command("docker pull hello-world", roles=roles)
-#run_command("docker run hello-world", roles=roles)
+#print(roles)
+#print(networks)
 
-print(roles)
-print(networks)
+for i in range(0, len(roles["control"])):
+    ui_address = roles["control"][i].address
+    print("Monitoring is available at http://%s:9090" % ui_address)
+
 
 #provider.destroy()
