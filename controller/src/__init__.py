@@ -201,7 +201,7 @@ def clear_connections():
 # handshake request
 @app.route('/syn_request/<url>/<job>', methods=['GET'])
 def syn_request(targeturl, job):
-    res = requests.get("http://"+targeturl+ ":5001/syn_response")
+    res = requests.get("http://"+targeturl+":5001/syn_response")
     #log.debug('RES STATUS CODE: '+str(res.status_code))
     if res.status_code == 200:
         # send restart request also to the downstream

@@ -1,5 +1,6 @@
 
 from enoslib.api import run_command #, wait_ssh
+from enoslib.api import run_ansible
 from enoslib.infra.enos_g5k.provider import G5k
 from enoslib.infra.enos_g5k.configuration import Configuration, NetworkConfiguration
 
@@ -152,14 +153,15 @@ run_command("sudo chmod +x /usr/local/bin/docker-compose", roles=roles)
 #pull and run Flink Stack
 run_command("rm -rf dynap_agent", roles=roles)
 run_command("git clone https://github.com/jazz09/dynap_agent.git", roles=roles)
-run_command("cd dynap_agent/deployment/ && docker-compose up -d", roles=roles)
+run_command("cd dynap_agent/controller/ && docker-compose up -d", roles=roles)
 
 #print(roles)
 #print(networks)
 
 for i in range(0, len(roles["control"])):
     ui_address = roles["control"][i].address
-    print("Monitoring is available at http://%s:9090" % ui_address)
+    print("Host is available at http://%s:5001" % ui_address)
+    print("Check the monitoring at http://%s:9090" % ui_address)
 
 
 #provider.destroy()
