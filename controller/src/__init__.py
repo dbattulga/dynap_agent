@@ -252,11 +252,10 @@ def restart_job(job):
     return {'message': 'Deployed'}, 200
 
 
-# request_stat response
+# response to request_stat
 @app.route('/stat_response', methods=['GET'])
 def stat_response():
     return jsonify(
         message='Success', 
-        data='coolcoolcoolnodoubtnodoubt'
+        data='cool cool'
     )
-    #return {'message': 'Success', 'data': 'coolcoolcoolnodoubtnodoubt'}, 200
