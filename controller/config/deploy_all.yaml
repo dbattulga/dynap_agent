@@ -1,13 +1,16 @@
 ---
 - hosts: all
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    base_dir: /opt/goldenowl-ws
   tasks:
-    - name: Clone a github repository
-      git:
-        repo: https://github.com/sqlite/sqlite.git
-        dest: /home/debian/repos/
-        clone: yes
-        update: yes
+#    - name: Clone a github repository
+#      git:
+#        repo: https://github.com/sqlite/sqlite.git
+#        dest: /home/debian/repos/
+#        clone: yes
+#        update: yes
 
     - name: Display some message
       debug:
-        msg: "The hostname is {{ ansible_net_hostname }} and the OS is {{ ansible_net_version }}"
+        msg: "The hostname is {{ ansible_net_hostname }} and the OS is {{ ansible_net_version }} and current dir is {{ playbook_dir }}"

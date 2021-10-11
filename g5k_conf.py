@@ -68,7 +68,7 @@ conf = (
     .from_settings(
         job_type="allow_classic_ssh",
         job_name="DTestJob",
-        walltime='0:30:00'
+        walltime='0:10:00'
         #env_name="/grid5000/images/debian9-x64-base-2020032721.tgz"
     )
     #.add_network_conf(network_rennes)
