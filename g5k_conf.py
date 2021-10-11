@@ -67,7 +67,7 @@ conf = (
     Configuration
     .from_settings(
         job_type="allow_classic_ssh",
-        job_name="DTestJob",
+        job_name="ETestJob",
         walltime='0:10:00'
         #env_name="/grid5000/images/debian9-x64-base-2020032721.tgz"
     )
@@ -151,8 +151,11 @@ run_command("rm -rf dynap_agent", roles=roles)
 run_command("git clone https://github.com/jazz09/dynap_agent.git", roles=roles)
 # run_command("cd dynap_agent/controller/ && docker-compose up -d", roles=roles)
 
-extra_vars = "asd"
-run_ansible(["/controller/config/deploy_all.yaml"], roles=roles)
+f = open("dynap_agent/controller/config/hosts-list.txt", "a")
+f.write("Now the file has more content!")
+f.close()
+run_command("cd dynap_agent/controller/ && docker-compose up -d", roles=roles)
+#run_ansible(["dynap_agent/controller/config/deploy_all.yaml"], roles=roles)
 
 
 #print(roles)
