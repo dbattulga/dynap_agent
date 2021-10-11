@@ -1,0 +1,13 @@
+---
+- hosts: all
+  tasks:
+    - name: Clone a github repository
+      git:
+        repo: https://github.com/sqlite/sqlite.git
+        dest: /home/debian/repos/
+        clone: yes
+        update: yes
+
+    - name: Display some message
+      debug:
+        msg: "The hostname is {{ ansible_net_hostname }} and the OS is {{ ansible_net_version }}"
