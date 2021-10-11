@@ -147,8 +147,8 @@ run_command("sudo curl -L https://github.com/docker/compose/releases/download/1.
 run_command("sudo chmod +x /usr/local/bin/docker-compose", roles=roles)
 
 #pull and run Flink Stack
-# run_command("rm -rf dynap_agent", roles=roles)
-# run_command("git clone https://github.com/jazz09/dynap_agent.git", roles=roles)
+run_command("rm -rf dynap_agent", roles=roles)
+run_command("git clone https://github.com/jazz09/dynap_agent.git", roles=roles)
 # run_command("cd dynap_agent/controller/ && docker-compose up -d", roles=roles)
 
 extra_vars = "asd"
