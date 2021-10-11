@@ -152,7 +152,7 @@ run_command("sudo chmod +x /usr/local/bin/docker-compose", roles=roles)
 # run_command("cd dynap_agent/controller/ && docker-compose up -d", roles=roles)
 
 extra_vars = "asd"
-run_ansible(["/controller/config/deploy_all.yaml"], roles=roles, extra_vars=extra_vars)
+run_ansible(["/controller/config/deploy_all.yaml"], roles=roles)
 
 
 #print(roles)

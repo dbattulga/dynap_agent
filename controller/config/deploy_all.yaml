@@ -2,7 +2,7 @@
 - hosts: all
   vars:
     ansible_python_interpreter: /usr/bin/python3
-    base_dir: /opt/goldenowl-ws
+    #base_dir: /opt/goldenowl-ws
   tasks:
     - name: Clone a github repository
       git:
