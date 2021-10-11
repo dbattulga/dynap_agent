@@ -4,6 +4,7 @@ from enoslib.api import run_ansible
 from enoslib.infra.enos_g5k.provider import G5k
 from enoslib.infra.enos_g5k.configuration import Configuration, NetworkConfiguration
 
+
 import logging
 logging.basicConfig(level=logging.INFO)
 
@@ -151,21 +152,19 @@ run_command("rm -rf dynap_agent", roles=roles)
 run_command("git clone https://github.com/jazz09/dynap_agent.git", roles=roles)
 # run_command("cd dynap_agent/controller/ && docker-compose up -d", roles=roles)
 
-f = open("dynap_agent/controller/config/hosts-list.txt", "a")
-f.write("Now the file has more content!")
-f.close()
-run_command("cd dynap_agent/controller/ && docker-compose up -d", roles=roles)
-#run_ansible(["dynap_agent/controller/config/deploy_all.yaml"], roles=roles)
-
-
 #print(roles)
 #print(networks)
 
-# for i in range(0, len(roles["control"])):
-#     ui_address = roles["control"][i].address
-#     print("Host is available at http://%s:5001" % ui_address)
-#     print("Check the monitoring at http://%s:9090" % ui_address)
-#     print("http://%s:5001" % ui_address)
+def get_hosts():
+    hosts = []
+    for i in range(0, len(roles["control"])):
+        ui_address = roles["control"][i].address
+        hosts.append(ui_address)
+    return hosts
 
+hosts = get_hosts()
+run_command("cd dynap_agent/ && python write_hosts.py", roles=roles)
+print("something's written to somewhere")
+run_command("cat controller/config/hosts-list.txt")
 
 #provider.destroy()
