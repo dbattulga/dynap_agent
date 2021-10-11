@@ -5,10 +5,7 @@ from enoslib.infra.enos_g5k.provider import G5k
 from enoslib.infra.enos_g5k.configuration import Configuration, NetworkConfiguration
 
 import logging
-
-
 logging.basicConfig(level=logging.INFO)
-
 
 network_rennes = NetworkConfiguration(
     id="n1",
@@ -134,7 +131,6 @@ conf = (
     .finalize()
 )
 
-
 provider = G5k(conf)
 roles, networks = provider.init()
 
@@ -151,17 +147,22 @@ run_command("sudo curl -L https://github.com/docker/compose/releases/download/1.
 run_command("sudo chmod +x /usr/local/bin/docker-compose", roles=roles)
 
 #pull and run Flink Stack
-run_command("rm -rf dynap_agent", roles=roles)
-run_command("git clone https://github.com/jazz09/dynap_agent.git", roles=roles)
-run_command("cd dynap_agent/controller/ && docker-compose up -d", roles=roles)
+# run_command("rm -rf dynap_agent", roles=roles)
+# run_command("git clone https://github.com/jazz09/dynap_agent.git", roles=roles)
+# run_command("cd dynap_agent/controller/ && docker-compose up -d", roles=roles)
+
+extra_vars = "asd"
+run_ansible(["/controller/config/deploy_all.yaml"], roles=roles, extra_vars=extra_vars)
+
 
 #print(roles)
 #print(networks)
 
-for i in range(0, len(roles["control"])):
-    ui_address = roles["control"][i].address
-    print("Host is available at http://%s:5001" % ui_address)
-    print("Check the monitoring at http://%s:9090" % ui_address)
+# for i in range(0, len(roles["control"])):
+#     ui_address = roles["control"][i].address
+#     print("Host is available at http://%s:5001" % ui_address)
+#     print("Check the monitoring at http://%s:9090" % ui_address)
+#     print("http://%s:5001" % ui_address)
 
 
 #provider.destroy()
