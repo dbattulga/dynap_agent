@@ -257,5 +257,5 @@ def restart_job(job):
 def stat_response():
     return jsonify(
         message='Success', 
-        data='cool cool'
+        data='cool cool cool no doubt no doubt'
     )
