@@ -68,7 +68,7 @@ conf = (
     Configuration
     .from_settings(
         job_type="allow_classic_ssh",
-        job_name="GTestJob",
+        job_name="HTestJob",
         walltime='0:10:00'
         #env_name="/grid5000/images/debian9-x64-base-2020032721.tgz"
     )
@@ -155,7 +155,7 @@ for i in range(0, len(roles["control"])):
     ui_address = roles["control"][i].address
     run_command("cd dynap_agent/ && python write_hosts.py %s" % ui_address, roles=roles)
 
-#run_command("cd dynap_agent/controller/ && docker-compose up -d", roles=roles)
+run_command("cd dynap_agent/controller/ && docker-compose up -d", roles=roles)
 run_command("cat dynap_agent/controller/config/hosts-list.txt", roles=roles)
 
 #provider.destroy()
