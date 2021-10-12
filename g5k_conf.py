@@ -68,7 +68,7 @@ conf = (
     Configuration
     .from_settings(
         job_type="allow_classic_ssh",
-        job_name="ETestJob",
+        job_name="GTestJob",
         walltime='0:10:00'
         #env_name="/grid5000/images/debian9-x64-base-2020032721.tgz"
     )
@@ -150,21 +150,12 @@ run_command("sudo chmod +x /usr/local/bin/docker-compose", roles=roles)
 #pull and run Flink Stack
 run_command("rm -rf dynap_agent", roles=roles)
 run_command("git clone https://github.com/jazz09/dynap_agent.git", roles=roles)
-# run_command("cd dynap_agent/controller/ && docker-compose up -d", roles=roles)
 
-#print(roles)
-#print(networks)
+for i in range(0, len(roles["control"])):
+    ui_address = roles["control"][i].address
+    run_command(f"cd dynap_agent/ && python write_hosts.py {ui_address}", roles=roles)
 
-def get_hosts():
-    hosts = []
-    for i in range(0, len(roles["control"])):
-        ui_address = roles["control"][i].address
-        hosts.append(ui_address)
-    return hosts
-
-hosts = get_hosts()
-run_command("cd dynap_agent/ && python write_hosts.py", roles=roles)
-print("something's written to somewhere")
-run_command("cat controller/config/hosts-list.txt")
+#run_command("cd dynap_agent/controller/ && docker-compose up -d", roles=roles)
+run_command("cat dynap_agent/controller/config/hosts-list.txt", roles=roles)
 
 #provider.destroy()
