@@ -153,7 +153,7 @@ run_command("git clone https://github.com/jazz09/dynap_agent.git", roles=roles)
 
 for i in range(0, len(roles["control"])):
     ui_address = roles["control"][i].address
-    run_command(f"cd dynap_agent/ && python write_hosts.py {ui_address}", roles=roles)
+    run_command("cd dynap_agent/ && python write_hosts.py %s" % ui_address, roles=roles)
 
 #run_command("cd dynap_agent/controller/ && docker-compose up -d", roles=roles)
 run_command("cat dynap_agent/controller/config/hosts-list.txt", roles=roles)
