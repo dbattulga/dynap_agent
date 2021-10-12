@@ -14,7 +14,8 @@ services:
       - agent_network
 
   jobmanager:
-    image: flink:1.11.3
+    image: public.registry.u-hopper.com/flink:1.11.3
+    # image: flink:1.11.3
     # for armv7
     # image: digitaljazz/flink-1.11.3-armv7:latest
     ports:
@@ -55,7 +56,8 @@ services:
       - agent_network
 
   prometheus:
-    image: prom/prometheus:latest
+    image: public.registry.u-hopper.com/prometheus:latest
+    # image: prom/prometheus:latest
     user: root
     container_name: prometheus
     volumes:
@@ -69,7 +71,8 @@ services:
       - agent_network
 
   node-exporter:
-    image: prom/node-exporter
+    image: public.registry.u-hopper.com/prom/node-exporter
+    # image: prom/node-exporter
     ports:
     # host port: container port
       - '9110:9100'
@@ -77,7 +80,8 @@ services:
       - agent_network
 
   cadvisor:
-    image: google/cadvisor:latest
+    image: public.registry.u-hopper.com/google/cadvisor
+    # image: google/cadvisor:latest
     # for armv7
     # image: budry/cadvisor-arm
     volumes:
@@ -91,7 +95,8 @@ services:
       - agent_network
 
   mosquitto:
-    image: eclipse-mosquitto
+    image: public.registry.u-hopper.com/eclipse-mosquitto
+    # image: eclipse-mosquitto
     hostname: mosquitto
     container_name: mosquitto
     expose:

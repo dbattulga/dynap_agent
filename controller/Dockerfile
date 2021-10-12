@@ -1,4 +1,5 @@
-FROM python:3
+#FROM python:3
+FROM public.registry.u-hopper.com/python:3.8
 
 WORKDIR /usr/src/app
 
