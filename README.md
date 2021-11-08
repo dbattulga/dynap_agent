@@ -2,7 +2,7 @@
 
 ![Alt text](./figs/sw_architecture.png?raw=true "Software architecture")
 
-#To run the script
+##To run the script
 
 * virtualenv -p python3 venv
 * source venv/bin/activate
