@@ -76,8 +76,8 @@ services:
     ports:
     # host port: container port
       - '9110:9100'
-    networks:
-      - agent_network
+    #networks:
+    #  - agent_network
 
   cadvisor:
     image: public.registry.u-hopper.com/google/cadvisor
