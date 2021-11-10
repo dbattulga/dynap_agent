@@ -105,11 +105,27 @@ services:
     ports:
       - "1883:1883"
       - "9001:9001"
-    #volumes:
-    #  - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    volumes:
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf
     #networks:
     #  - agent_network
 
+
+  grafana:
+    image: grafana/grafana:latest
+    #depends_on:
+    #  - prometheus
+    ports:
+      - "3000:3000"
+    #environment:
+    #  - GF_SECURITY_ADMIN_PASSWORD=admin
+    #volumes:
+    #  - ./grafana/provisioning/:/etc/grafana/provisioning/
+    #deploy:
+    #  replicas: 1
+    #  placement:
+    #    constraints:
+    #      - node.hostname == worker04
 
 #networks:
 #  agent_network:
