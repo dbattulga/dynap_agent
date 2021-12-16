@@ -19,7 +19,6 @@ from flask import g
 ## 'jobid': gibberish id returned from SPE
 
 
-
 def get_db(dbname):
     db = getattr(g, '_database', None)
     if db is None:

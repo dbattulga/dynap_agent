@@ -13,7 +13,7 @@ __pycache__/
 # jars
 jars/
 
-# jobs
+# jobs & clients
 *.db
 
 # Distribution / packaging

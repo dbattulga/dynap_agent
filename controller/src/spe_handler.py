@@ -15,6 +15,7 @@ def upload_jar(base_url, jarpath):
     upload.raise_for_status()
     return upload.status_code
 
+
 def find_all(a_str, sub):
     start = 1
     while True:
@@ -23,17 +24,18 @@ def find_all(a_str, sub):
         yield start
         start += len(sub) # use start += 1 to find overlapping matches
 
+
 def get_upload_id(str):
     lst = list(find_all(str, '/'))
     return (str[lst[-1]+1:])
 
+
 # starts job with parameters, successful: returns jobid else "failed"
-def start_jar(base_url, jarid, entryclass, sourcemqtt, sinkmqtt, sourcetopic, sinktopic, jobname):
-    sourcebrokers = ','.join(sourcemqtt)
-    sourcetopics = ','.join(sourcetopic)
-    sinktopics = ','.join(sinktopic)
-    sinkbroker = sinkmqtt
-    programArgs = "--jobname '"+jobname+"' --sourcemqtt '"+sourcebrokers+"' --sinkmqtt '"+sinkbroker+"' --sourcetopic '"+sourcetopics+"' --sinktopic '"+sinktopics+"' "
+def start_jar(base_url, jarid, entryclass, broker, sourcetopic, sinktopic, jobname):
+    broker = broker
+    sourcetopic = ','.join(sourcetopic)
+    sinktopic = ','.join(sinktopic)
+    programArgs = "--jobname '"+jobname+"' --broker '"+broker+"' --sourcetopic '"+sourcetopic+"' --sinktopic '"+sinktopic+"' "
     propertiess = {
         "entryClass": entryclass,
         "programArgs": programArgs
@@ -64,19 +66,3 @@ def stop_job(base_url, jobid):
     else:
         stop.raise_for_status()
     return stop.status_code
-
-# restart job with given arguments: 
-# flink url:in this case local address
-# jobid: of the stopping job
-# jarid: of the starting job
-# entryclass: old entryclass
-# sourcemqtt: NEW source address list[]
-# sinkmqtt: old sink address
-# sourcetopic: NEW source address list[]
-# sinktopic: old sink topic
-# jobname: old jobname
-# on successful restart, returns new jobname
-def restart_job(base_url, jobid, jarid, entryclass, sourcemqtt, sinkmqtt, sourcetopic, sinktopic, jobname):
-    stop_job(base_url, jobid)
-    jobid = start_jar(base_url, jarid, entryclass, sourcemqtt, sinkmqtt, sourcetopic, sinktopic, jobname)
-    return jobid
