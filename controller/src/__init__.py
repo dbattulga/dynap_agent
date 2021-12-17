@@ -67,19 +67,38 @@ def start_job(args, filename):
     args['jobid'] = jobid
     args['job_path'] = full_path
     log.debug(jobid)
-    # save to db
+    # send request to upstream (clients to start)
+    upstreams = args['source_broker']
+    for i in range(len(upstreams)):
+        client_id = args['job_name']+"_source_"+args['source_topic'][i]
+        log.debug("starting "+client_id+" on "+args['source_broker'][i])
+        json_data = {
+            "job_name": args['job_name'],
+            "source_broker": args['source_broker'][i],
+            "topic": args['source_topic'][i],
+            "sink_broker": args['sink_broker'][i]
+        }
+        req = requests.get("http://" + args['source_broker'][i] + ":5001/create_client", json=json_data)
+        log.debug(req.text)
     shelf = db_handler.get_db('jobs.db')
     shelf[args['job_name']] = args
     shelf.close()
     return {'message': 'Job Started'}, 200
 
 
-# client request for uploading and starting a SPE job
-# Do not send already running job to its own instance! it will delete the running job with a same name
 @app.route('/send/<url>/<job>', methods=['GET'])
 def send_job(url, job):
     shelf = db_handler.get_db('jobs.db')
+    if not (job in shelf):
+        return {'message': 'Job not found', 'data': {}}, 404
+    upstreams = shelf[job]['source_broker']
+    for i in range(len(upstreams)):
+        client_id = shelf[job]['job_name']+"_source_"+shelf[job]['source_topic'][i]
+        log.debug("deleting "+client_id+" on "+shelf[job]['source_broker'][i])
+        req = requests.get("http://" + shelf[job]['source_broker'][i] + ":5001/delete_client/"+client_id)
+        log.debug(req.text)
 
+    stop_job(job)
     body = {'pipeline_name': shelf[job]['pipeline_name'],
             'job_name': shelf[job]['job_name'],
             'agent_address': url,
@@ -97,6 +116,7 @@ def send_job(url, job):
     req = requests.post("http://" + url + ":5001/upload", files=files)
     if req.status_code == 200:
         delete_job(job)
+    # TODO send request to downstream (to update upstream)
     return {'message': 'Success'}, 200
 
 
@@ -115,6 +135,30 @@ def list_upstream(job):
     return {'message': 'Success', 'data': upstreams}, 200
 
 
+@app.route('/update_downstream', methods=['GET'])
+def update_downstream():
+    # TODO send topic and address
+    topic = "T-1"
+    updated_address = "updated_address"
+    # receive TOPIC and upstream ADDRESS
+    # look through the db,
+    # if any of the source topics match with TOPIC
+    # edit the source broker address with ADDRESS
+    stuff = db_handler.get_db('jobs.db')
+    for job in stuff:
+        #log.debug(job)
+        #log.debug(stuff[job]['source_broker'])
+        for i in range(len(stuff[job]['source_topic'])):
+            #log.debug(stuff[job]['source_topic'][i])
+            if topic == stuff[job]['source_topic'][i]:
+                # TODO update the DB with the updated address
+                stuff[job]['source_broker'][i] = updated_address
+                #log.debug(stuff[job]['source_broker'][i])
+    for job in stuff:
+        log.debug(stuff[job]['source_broker'])
+    return {'message': 'Success'}, 200
+
+
 @app.route('/list_downstream/<job>', methods=['GET'])
 def list_downstream(job):
     stuff = db_handler.get_db('jobs.db')
@@ -131,9 +175,6 @@ def delete_job(job):
     shelf = db_handler.get_db('jobs.db')
     if not (job in shelf):
         return {'message': 'Job not found', 'data': {}}, 404
-    host = 'http://' + shelf[job]['agent_address'] + ':' + spe_port
-    spe_handler.delete_jar(host, shelf[job]['jarid'])
-    spe_handler.stop_job(host, shelf[job]['jobid'])
     if os.path.exists(shelf[job]['job_path']):
         os.remove(shelf[job]['job_path'])
     del shelf[job]
@@ -141,11 +182,22 @@ def delete_job(job):
     return {'message': 'Success'}, 200
 
 
+@app.route('/stop/<job>', methods=['GET'])
+def stop_job(job):
+    shelf = db_handler.get_db('jobs.db')
+    if not (job in shelf):
+        return {'message': 'Job not found', 'data': {}}, 404
+    host = 'http://' + shelf[job]['agent_address'] + ':' + spe_port
+    spe_handler.delete_jar(host, shelf[job]['jarid'])
+    spe_handler.stop_job(host, shelf[job]['jobid'])
+    return {'message': 'Success'}, 200
+
+
 def on_message(client, userdata, message):
     msg = "message received: " + str(message.payload.decode("utf-8"))
-    pub_client = mqtt.Client("pub_client_from_flask-1", clean_session=True)
+    pub_client = mqtt.Client("pub_"+userdata["client_id"], clean_session=True)
     pub_client.connect(userdata["sink_broker"])
-    pub_client.publish(topic=userdata["sink_topic"], payload=str(message.payload.decode("utf-8")))
+    pub_client.publish(topic=userdata["topic"], payload=str(message.payload.decode("utf-8")))
     #pub_client.disconnect()
     log.debug(msg)
 
@@ -166,25 +218,22 @@ def on_disconnect(client, userdata, rc):
 # create mqtt client
 @app.route('/create_client', methods=['GET'])
 def create_client():
-    #client_name = request.args.get('client_name')
-    #source_broker = request.args.get('source_broker')
-    #source_topic = request.args.get('source_topic')
-    #sink_broker = request.args.get('sink_broker')
-    #sink_topic = request.args.get('sink_topic')
-    client_id = "sub_client_from_flask-1"
-    source_broker = "192.168.1.8"
-    source_topic = "T-1"
-    sink_broker = "192.168.1.8"
-    sink_topic = "T-2"
-    args = {'client_name': client_id,
+    json_data = request.json
+    job_name = json_data['job_name']
+    source_broker = json_data['source_broker']
+    topic = json_data['topic']
+    sink_broker = json_data['sink_broker']
+    client_id = job_name+"_source_"+topic
+
+    args = {'client_id': client_id,
             'source_broker': source_broker,
-            'source_topic': source_topic,
-            'sink_broker': sink_broker,
-            'sink_topic': sink_topic}
+            'topic': topic,
+            'sink_broker': sink_broker
+        }
 
     client = mqtt.Client(client_id, userdata=args, clean_session=False)
     client.connect(source_broker)
-    client.subscribe(source_topic, qos=1)
+    client.subscribe(topic, qos=1)
 
     shelf = db_handler.get_db('clients.db')
     shelf[client_id] = args
