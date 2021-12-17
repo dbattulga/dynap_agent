@@ -189,7 +189,7 @@ def stop_job(job):
         return {'message': 'Job not found', 'data': {}}, 404
     host = 'http://' + shelf[job]['agent_address'] + ':' + spe_port
     spe_handler.delete_jar(host, shelf[job]['jarid'])
-    spe_handler.stop_job(host, shelf[job]['jobid'])
+    spe_handler.stop_job(host, shelf[job]['job_name'])
     return {'message': 'Success'}, 200
 
 
@@ -234,7 +234,7 @@ def create_client():
     client = mqtt.Client(client_id, userdata=args, clean_session=False)
     client.connect(source_broker)
     client.subscribe(topic, qos=1)
-
+    # TODO update the jobs DB with the updated downstream address
     shelf = db_handler.get_db('clients.db')
     shelf[client_id] = args
     shelf.close()
