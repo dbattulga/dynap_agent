@@ -1,10 +1,4 @@
-import json
 import requests
-import os
-import shelve
-import datetime
-import time
-from flask import g
 
 
 # exposed metrics:
@@ -68,6 +62,7 @@ def get_available_task_slots(base_url):
     # response.json()['data']['result'][0] to [N] is the source, sink operators of each job, weird!
     result = response.json()['data']['result']
     return result[0]['value'][1]
+
 
 #print('input data rate of a_job: ', get_input_data_rate('A_job'))
 #print('input data rate of b_job: ', get_input_data_rate('B_job'))

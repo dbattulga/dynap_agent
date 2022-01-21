@@ -6,9 +6,7 @@ from threading import Lock
 
 import markdown
 import requests
-from flask import Flask
-from flask import jsonify
-from flask import request
+from flask import Flask, request, jsonify
 from flask.logging import create_logger
 from flask_restful import Api
 
@@ -17,20 +15,25 @@ from src import metrics_handler
 from src import spe_handler
 import paho.mqtt.client as mqtt
 
+
 logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 api = Api(app)
 log = create_logger(app)
 
+from src import test_routes
+
+
 mutex = Lock()
 job_path = '/usr/src/app/jars'
 spe_port = '8081'
 broker_port = '1883'
+shelf = {}
+clients = {}
 
 
 @app.route("/")
 def index():
-    """Present some documentation"""
     with open(os.path.dirname(app.root_path) + '/README.md', 'r') as markdown_file:
         content = markdown_file.read()
         return markdown.markdown(content)
@@ -80,15 +83,15 @@ def start_job(args, filename):
         }
         req = requests.get("http://" + args['source_broker'][i] + ":5001/create_client", json=json_data)
         log.debug(req.text)
-    shelf = db_handler.get_db('jobs.db')
+    #shelf = db_handler.get_db('jobs.db')
     shelf[args['job_name']] = args
-    shelf.close()
+    #shelf.close()
     return {'message': 'Job Started'}, 200
 
 
 @app.route('/send/<url>/<job>', methods=['GET'])
 def send_job(url, job):
-    shelf = db_handler.get_db('jobs.db')
+    #shelf = db_handler.get_db('jobs.db')
     if not (job in shelf):
         return {'message': 'Job not found', 'data': {}}, 404
     upstreams = shelf[job]['source_broker']
@@ -98,7 +101,7 @@ def send_job(url, job):
         req = requests.get("http://" + shelf[job]['source_broker'][i] + ":5001/delete_client/"+client_id)
         log.debug(req.text)
 
-    stop_job(job)
+    stop_job(job) #stop request to flink
     body = {'pipeline_name': shelf[job]['pipeline_name'],
             'job_name': shelf[job]['job_name'],
             'agent_address': url,
@@ -115,20 +118,29 @@ def send_job(url, job):
     ]
     req = requests.post("http://" + url + ":5001/upload", files=files)
     if req.status_code == 200:
-        delete_job(job)
-    # TODO send request to downstream (to update upstream)
+        downstreams = shelf[job]['sink_broker']
+        for i in range(len(downstreams)):
+            json_data = {
+                "job_name": shelf[job]['job_name'],
+                "update_source_broker": url
+            }
+            req = requests.get("http://" + shelf[job]['sink_broker'][i] + ":5001/update_downstream", json=json_data)
+            log.debug(req.text)
+        delete_job(job) #delete from DB
     return {'message': 'Success'}, 200
 
 
 @app.route('/jobs', methods=['GET'])
 def list_job():
-    stuff = db_handler.list_db('jobs.db')
+    #stuff = db_handler.list_db('jobs.db')
+    stuff = shelf
     return {'message': 'Success', 'data': stuff}, 200
 
 
 @app.route('/list_upstream/<job>', methods=['GET'])
 def list_upstream(job):
-    stuff = db_handler.get_db('jobs.db')
+    #stuff = db_handler.get_db('jobs.db')
+    stuff = shelf
     if not (job in stuff):
         return {'message': 'Job not found', 'data': {}}, 404
     upstreams = stuff[job]['source_broker']
@@ -137,31 +149,30 @@ def list_upstream(job):
 
 @app.route('/update_downstream', methods=['GET'])
 def update_downstream():
+    json_data = request.json
+    job_name = json_data['job_name']
+    topic = json_data['topic']
     # TODO send topic and address
     topic = "T-1"
-    updated_address = "updated_address"
+    updated_address = json_data['update_source_broker']
     # receive TOPIC and upstream ADDRESS
     # look through the db,
     # if any of the source topics match with TOPIC
     # edit the source broker address with ADDRESS
-    stuff = db_handler.get_db('jobs.db')
-    for job in stuff:
-        #log.debug(job)
-        #log.debug(stuff[job]['source_broker'])
-        for i in range(len(stuff[job]['source_topic'])):
-            #log.debug(stuff[job]['source_topic'][i])
-            if topic == stuff[job]['source_topic'][i]:
-                # TODO update the DB with the updated address
-                stuff[job]['source_broker'][i] = updated_address
-                #log.debug(stuff[job]['source_broker'][i])
-    for job in stuff:
-        log.debug(stuff[job]['source_broker'])
+    #stuff = db_handler.get_db('jobs.db')
+    for job in shelf:
+        for i in range(len(shelf[job]['source_topic'])):
+            if topic == shelf[job]['source_topic'][i]:
+                shelf[job]['source_broker'][i] = updated_address
+    for job in shelf:
+        log.debug(shelf[job]['source_broker'])
     return {'message': 'Success'}, 200
 
 
 @app.route('/list_downstream/<job>', methods=['GET'])
 def list_downstream(job):
-    stuff = db_handler.get_db('jobs.db')
+    #stuff = db_handler.get_db('jobs.db')
+    stuff = shelf
     if not (job in stuff):
         return {'message': 'Job not found', 'data': {}}, 404
     downstreams = stuff[job]['sink_broker']
@@ -172,24 +183,24 @@ def list_downstream(job):
 
 @app.route('/delete/<job>', methods=['GET'])
 def delete_job(job):
-    shelf = db_handler.get_db('jobs.db')
+    #shelf = db_handler.get_db('jobs.db')
     if not (job in shelf):
         return {'message': 'Job not found', 'data': {}}, 404
     if os.path.exists(shelf[job]['job_path']):
         os.remove(shelf[job]['job_path'])
-    del shelf[job]
-    shelf.close()
+    del shelf[job] #check if it's deleting all db
+    #shelf.close()
     return {'message': 'Success'}, 200
 
 
 @app.route('/stop/<job>', methods=['GET'])
 def stop_job(job):
-    shelf = db_handler.get_db('jobs.db')
+    #shelf = db_handler.get_db('jobs.db')
     if not (job in shelf):
         return {'message': 'Job not found', 'data': {}}, 404
     host = 'http://' + shelf[job]['agent_address'] + ':' + spe_port
     spe_handler.delete_jar(host, shelf[job]['jarid'])
-    spe_handler.stop_job(host, shelf[job]['job_name'])
+    spe_handler.stop_job(host, shelf[job]['jobid'])
     return {'message': 'Success'}, 200
 
 
@@ -234,10 +245,10 @@ def create_client():
     client = mqtt.Client(client_id, userdata=args, clean_session=False)
     client.connect(source_broker)
     client.subscribe(topic, qos=1)
-    # TODO update the jobs DB with the updated downstream address
-    shelf = db_handler.get_db('clients.db')
-    shelf[client_id] = args
-    shelf.close()
+    #shelf = db_handler.get_db('clients.db')
+    #shelf[client_id] = args
+    clients[client_id] = args
+    #shelf.close()
 
     client.on_connect = on_connect
     client.on_disconnect = on_disconnect
@@ -250,22 +261,23 @@ def create_client():
 # show list of clients
 @app.route('/clients', methods=['GET'])
 def list_client():
-    stuff = db_handler.list_db('clients.db')
+    #stuff = db_handler.list_db('clients.db')
+    stuff = clients
     return {'message': 'Success', 'data': stuff}, 200
 
 
 @app.route('/delete_client/<client_id>', methods=['GET'])
 def delete_client(client_id):
-    shelf = db_handler.get_db('clients.db')
-    if not (client_id in shelf):
+    #shelf = db_handler.get_db('clients.db')
+    if not (client_id in clients):
         return {'message': 'Client not found', 'data': {}}, 404
     client = mqtt.Client(client_id, clean_session=False)
-    broker = shelf[client_id]['source_broker']
+    broker = clients[client_id]['source_broker']
     client.connect(broker)
     client.on_disconnect = on_disconnect
     client.loop_stop()
-    del shelf[client_id]
-    shelf.close()
+    del clients[client_id]
+    #shelf.close()
     return {'message': 'Success'}, 200
 
 
