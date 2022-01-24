@@ -35,7 +35,7 @@ def on_disconnect(client, userdata, rc):
 @app.route('/create_client', methods=['GET'])
 def create_client():
     json_data = request.json
-    client_id = json_data['job_name']
+    client_id = json_data['client_id']
     source_broker = json_data['source_broker']
     topic = json_data['topic']
     sink_broker = json_data['sink_broker']
