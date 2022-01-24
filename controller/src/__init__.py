@@ -77,7 +77,7 @@ def start_job(args, filename):
         client_id = args['job_name']+"_source_"+args['source_topic'][i]
         log.debug("starting "+client_id+" on "+args['source_broker'][i])
         json_data = {
-            "job_name": args['job_name'],
+            "client_id": client_id,
             "source_broker": args['source_broker'][i],
             "topic": args['source_topic'][i],
             "sink_broker": args['sink_broker'][i]
@@ -114,11 +114,24 @@ def send_job(url, job):
     stop_job(job) #stop request to flink
 
     downstreams = shelf[job]['sink_broker']
+    clients = db_handler.get_db('clients.db')
     for i in range(len(downstreams)):
-        client_id = shelf[job]['job_name']+"_source_"+shelf[job]['sink_topic'][i]
-        log.debug("deleting "+client_id+" on "+shelf[job]['agent_address'])
-        req = requests.get("http://" + shelf[job]['agent_address'] + ":5001/delete_client/"+client_id)
-        log.debug(req.text)
+        job_topic = shelf[job]['sink_topic'][i]
+        for client in clients:
+            client_topic = client['topic']
+            if client_topic == job_topic:
+                client_id = client['client_id']
+                log.debug("deleting "+client_id+" on "+shelf[job]['agent_address'])
+                req = requests.get("http://" + shelf[job]['agent_address'] + ":5001/delete_client/"+client_id)
+                log.debug("starting "+client_id+" on "+url)
+                json_data = {
+                    "client_id": client_id,
+                    "source_broker": url,
+                    "topic": client_topic,
+                    "sink_broker": shelf[job]['sink_broker'][i]
+                }
+                req = requests.get("http://" + url + ":5001/create_client", json=json_data)
+                log.debug(req.text)
 
     body = {'pipeline_name': shelf[job]['pipeline_name'],
             'job_name': shelf[job]['job_name'],
@@ -143,18 +156,6 @@ def send_job(url, job):
                 "source_topic": shelf[job]['sink_topic'][i]
             }
             req = requests.get("http://" + shelf[job]['sink_broker'][i] + ":5001/update_downstream", json=json_data)
-            log.debug(req.text)
-
-        for i in range(len(downstreams)):
-            client_id = shelf[job]['job_name']+"_source_"+shelf[job]['sink_topic'][i]
-            log.debug("starting "+client_id+" on "+url)
-            json_data = {
-                "job_name": shelf[job]['job_name'],
-                "source_broker": url,
-                "topic": shelf[job]['sink_topic'][i],
-                "sink_broker": shelf[job]['sink_broker'][i]
-            }
-            req = requests.get("http://" + url + ":5001/create_client", json=json_data)
             log.debug(req.text)
 
         delete_job(job) #delete from DB
