@@ -34,7 +34,7 @@ services:
     #  - agent_network
 
   taskmanager:
-    image: flink:1.11.3
+    image: public.registry.u-hopper.com/flink:1.11.3
     # for armv7
     # image: digitaljazz/flink-1.11.3-armv7:latest
     #ports:
