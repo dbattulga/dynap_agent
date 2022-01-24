@@ -146,13 +146,13 @@ def send_job(url, job):
             log.debug(req.text)
 
         for i in range(len(downstreams)):
-            client_id = shelf['job_name']+"_source_"+shelf['sink_topic'][i]
+            client_id = shelf[job]['job_name']+"_source_"+shelf[job]['sink_topic'][i]
             log.debug("starting "+client_id+" on "+url)
             json_data = {
-                "job_name": shelf['job_name'],
+                "job_name": shelf[job]['job_name'],
                 "source_broker": url,
-                "topic": shelf['sink_topic'][i],
-                "sink_broker": shelf['sink_broker'][i]
+                "topic": shelf[job]['sink_topic'][i],
+                "sink_broker": shelf[job]['sink_broker'][i]
             }
             req = requests.get("http://" + url + ":5001/create_client", json=json_data)
             log.debug(req.text)
