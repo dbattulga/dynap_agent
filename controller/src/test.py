@@ -73,7 +73,6 @@ def start_jarr():
     sinktopic = ["T1", "T2"]
     sourcetopic = ["T3", "T4"]
 
-
     sourcebrokers = ','.join(sourcemqtt)
     sourcetopics = ','.join(sourcetopic)
     sinktopics = ','.join(sinktopic)
@@ -91,5 +90,26 @@ def start_jarr():
             return response["jobid"]
     start.raise_for_status()
     return start.status_code
+
+def test_clients():
+    downstreams = shelf[job]['sink_broker']
+    clients = db_handler.get_db('clients.db')
+    for i in range(len(downstreams)):
+        job_topic = shelf[job]['sink_topic'][i]
+        for client in clients:
+            client_topic = client['topic']
+            if client_topic == job_topic:
+                client_id = client['client_id']
+                log.debug("deleting "+client_id+" on "+shelf[job]['agent_address'])
+                req = requests.get("http://" + shelf[job]['agent_address'] + ":5001/delete_client/"+client_id)
+                log.debug("starting "+client_id+" on "+url)
+                json_data = {
+                    "client_id": client_id,
+                    "source_broker": url,
+                    "topic": client_topic,
+                    "sink_broker": shelf[job]['sink_broker'][i]
+                }
+                req = requests.get("http://" + url + ":5001/create_client", json=json_data)
+                log.debug(req.text)
 
 print( start_jarr() )

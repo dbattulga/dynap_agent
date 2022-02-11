@@ -68,8 +68,8 @@ conf = (
     Configuration
     .from_settings(
         job_type="allow_classic_ssh",
-        job_name="ITestJob",
-        walltime='1:00:00'
+        job_name="QTestJob",
+        walltime='2:00:00'
         #env_name="/grid5000/images/debian9-x64-base-2020032721.tgz"
     )
     #.add_network_conf(network_rennes)
@@ -101,7 +101,7 @@ conf = (
     .add_machine(
         roles=["control"],
         cluster="petitprince",
-        nodes=2,
+        nodes=4,
         primary_network=network_luxembourg
     )
     # .add_machine(
